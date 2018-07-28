@@ -11,33 +11,40 @@ import { API_CONFIG } from '../../config/api.config';
   templateUrl: 'profile.html',
 })
 export class ProfilePage {
-
+  
   cliente: ClienteDTO;
-
+  
   constructor(
     public navCtrl: NavController, 
     public navParams: NavParams,
     public storage: StorageService,
     public clienteService: ClienteService) {
-  }
-
-  ionViewDidLoad() {
-    let localUser = this.storage.getLocalUser();
-    if (localUser && localUser.email) {
-      this.clienteService.findByEmail(localUser.email)
+    }
+    
+    ionViewDidLoad() {
+      let localUser = this.storage.getLocalUser();
+      if (localUser && localUser.email) {
+        this.clienteService.findByEmail(localUser.email)
         .subscribe(response => {
           this.cliente = response;
           this.getImageIfExists();
         },
-        error => {});
+        error => {
+          if (error.status == 403) {
+            this.navCtrl.setRoot('HomePage');
+          }
+        });
+      }
+      else {
+        this.navCtrl.setRoot('HomePage');
+      }
+    }
+    
+    getImageIfExists() {
+      this.clienteService.getImageFromBucket(this.cliente.id)
+      .subscribe(response => {
+        this.cliente.imageUrl = `${API_CONFIG.bucketBaseUrl}/cp${this.cliente.id}.jpg`;
+      },
+      error => {});
     }
   }
-
-  getImageIfExists() {
-    this.clienteService.getImageFromBucket(this.cliente.id)
-    .subscribe(response => {
-      this.cliente.imageUrl = `${API_CONFIG.bucketBaseUrl}/cp${this.cliente.id}.jpg`;
-    },
-    error => {});
-  }
-}
